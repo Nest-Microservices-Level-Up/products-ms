@@ -10,11 +10,12 @@ import { PrismaClient } from 'generated/prisma/client';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import { PaginationDto } from 'src/common';
 import { RpcException } from '@nestjs/microservices';
+import { envs } from 'src/config';
 
 @Injectable()
 export class ProductsService extends PrismaClient implements OnModuleInit {
   constructor() {
-    const adapter = new PrismaBetterSqlite3({ url: process.env.DATABASE_URL });
+    const adapter = new PrismaBetterSqlite3({ url: envs.databaseUrl });
     super({ adapter });
   }
 
@@ -63,7 +64,7 @@ export class ProductsService extends PrismaClient implements OnModuleInit {
 
     if (!product) {
       throw new RpcException({
-        status: HttpStatus.BAD_REQUEST,
+        status: HttpStatus.NOT_FOUND,
         message: `User with id # ${id} not found`
       });
     }
