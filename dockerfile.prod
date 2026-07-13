@@ -1,0 +1,50 @@
+
+# Dependencies
+FROM node:20-alpine as deps
+
+WORKDIR /usr/src/app
+
+COPY package.json ./
+COPY package-lock.json ./
+
+RUN npm install
+
+
+# Build the application
+FROM node:20-alpine as build
+
+WORKDIR /usr/src/app
+
+# Copy from deps the node modules
+COPY --from=deps /usr/src/app/node_modules ./node_modules
+
+# Copy all the application code 
+COPY . .
+
+RUN npx prisma generate
+
+RUN npm run build
+
+RUN npm ci -f --only=production && npm cache clean --force
+
+
+# Create the Docker final image
+FROM node:20-alpine as prod
+
+WORKDIR /usr/src/app
+
+COPY --from=build /usr/src/app/node_modules ./node_modules
+
+# Copy the DIST folder
+COPY --from=build /usr/src/app/dist ./dist
+COPY --from=build /usr/src/app/prisma ./prisma
+
+RUN chown -R node:node /usr/src/app
+
+ENV NODE_ENV=production
+
+USER node
+
+EXPOSE 3000
+
+CMD [ "node", "dist/src/main.js" ]
